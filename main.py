@@ -22,6 +22,22 @@ def check_connection():
     except:
         return jsonify({"status": "error"}), 500
 
+@app.route('/update')
+def update():
+    try:
+        result = subprocess.run(
+            ['git', 'pull', 'origin', 'main'],
+            capture_output=True, text=True,
+            cwd=BASE_DIR
+        )
+        if result.returncode == 0:
+            subprocess.Popen(['sudo', 'systemctl', 'restart', 'stlink.service'])
+            return jsonify({"status": "success", "output": result.stdout})
+        else:
+            return jsonify({"status": "error", "output": result.stderr})
+    except Exception as e:
+        return jsonify({"status": "error", "output": str(e)})
+
 @app.route('/start_flash')
 @app.route('/flash')
 def flash_process():

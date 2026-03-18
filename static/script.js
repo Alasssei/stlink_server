@@ -256,3 +256,23 @@ function runCooldown(seconds) {
         }
     }, 1000);
 }
+
+async function runUpdate() {
+    const btn = document.getElementById('update-btn');
+    btn.innerText = '⏳ Оновлення...';
+    try {
+        const res = await fetch('/update');
+        const data = await res.json();
+        if (data.status === 'success') {
+            btn.innerText = '✅ Оновлено! Перезавантаж сторінку';
+            btn.style.borderLeftColor = '#00ff88';
+            btn.style.color = '#00ff88';
+        } else {
+            btn.innerText = '❌ Помилка — див. консоль';
+            btn.style.borderLeftColor = '#ff4444';
+            console.error(data.output);
+        }
+    } catch(e) {
+        btn.innerText = '❌ Збій з\'єднання';
+    }
+}
