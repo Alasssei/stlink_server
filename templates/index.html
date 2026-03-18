@@ -5,217 +5,463 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>STLink Aboba_OS</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Barlow+Condensed:wght@400;700;900&display=swap" rel="stylesheet">
     <style>
-        body { background-color: #121212; color: #e0e0e0; font-family: 'Segoe UI', sans-serif; -webkit-tap-highlight-color: transparent; }
-        .container { max-width: 450px; }
+        :root {
+            --yellow: #FFD600;
+            --yellow-dim: #c9a800;
+            --yellow-glow: rgba(255, 214, 0, 0.15);
+            --yellow-glow-strong: rgba(255, 214, 0, 0.35);
+            --black: #0a0a0a;
+            --black-2: #111111;
+            --black-3: #1a1a1a;
+            --black-4: #222222;
+            --gray: #444;
+            --gray-light: #666;
+            --text: #e8d87a;
+            --text-dim: #8a7a2a;
+        }
 
-        /* Основные кнопки меню */
+        * { box-sizing: border-box; }
+
+        body {
+            background-color: var(--black);
+            color: var(--text);
+            font-family: 'Barlow Condensed', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+            min-height: 100vh;
+            background-image:
+                repeating-linear-gradient(0deg, transparent, transparent 40px, rgba(255,214,0,0.015) 40px, rgba(255,214,0,0.015) 41px),
+                repeating-linear-gradient(90deg, transparent, transparent 40px, rgba(255,214,0,0.015) 40px, rgba(255,214,0,0.015) 41px);
+        }
+
+        .container { max-width: 460px; }
+
+        /* ── HEADER ── */
+        .site-header { text-align: center; margin-bottom: 36px; padding-top: 8px; }
+        .site-header .logo {
+            font-family: 'Barlow Condensed', sans-serif;
+            font-weight: 900;
+            font-size: 2.8rem;
+            letter-spacing: 6px;
+            text-transform: uppercase;
+            color: var(--yellow);
+            text-shadow: 0 0 24px var(--yellow-glow-strong);
+        }
+        .site-header .logo span {
+            color: var(--black);
+            background: var(--yellow);
+            padding: 0 10px;
+            margin-left: 6px;
+        }
+        .site-header .subtitle {
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.8rem;
+            color: var(--text-dim);
+            letter-spacing: 3px;
+            margin-top: 6px;
+        }
+
+        /* ── MENU BUTTONS ── */
         .menu-btn {
-            padding: 24px; font-size: 1.1rem; background: #1e1e1e; border: 1px solid #333;
-            margin-bottom: 12px; border-radius: 18px; cursor: pointer;
-            display: flex; justify-content: space-between; align-items: center;
-            transition: 0.1s; box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+            padding: 22px 24px;
+            font-size: 1.3rem;
+            font-weight: 700;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            background: var(--black-2);
+            border: 1px solid var(--gray);
+            border-left: 5px solid var(--yellow);
+            margin-bottom: 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: background 0.1s, box-shadow 0.1s;
+            color: var(--text);
         }
-        .menu-btn:active { background: #282828; transform: scale(0.96); box-shadow: none; }
+        .menu-btn:hover { background: var(--black-3); box-shadow: 0 0 14px var(--yellow-glow); }
+        .menu-btn:active { background: var(--black-4); transform: scale(0.98); box-shadow: none; }
+        .menu-btn .arrow { color: var(--yellow); font-size: 1.4rem; }
 
-        /* УВЕЛИЧЕННАЯ КНОПКА НАЗАД */
-        .back-btn {
-            padding: 18px; background: #121212; border: 2px solid #444; color: #00adb5;
-            margin-bottom: 25px; border-radius: 18px; cursor: pointer;
-            display: flex; align-items: center; justify-content: center;
-            font-weight: bold; font-size: 1rem; text-transform: uppercase; letter-spacing: 1px;
+        /* ── SECTION LABEL ── */
+        .section-label {
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.8rem;
+            letter-spacing: 3px;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            padding-left: 10px;
+            margin-bottom: 8px;
+            margin-top: 18px;
+            border-left: 3px solid var(--yellow-dim);
         }
-        .back-btn:active { background: #1a1a1a; border-color: #00adb5; color: #fff; }
-        .back-icon { margin-right: 12px; font-size: 1.2rem; }
+
+        /* ── BACK BUTTON ── */
+        .back-btn {
+            padding: 18px 24px;
+            background: transparent;
+            border: 1px solid var(--gray);
+            border-top: 3px solid var(--yellow);
+            color: var(--yellow);
+            margin-bottom: 24px;
+            border-radius: 4px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 900;
+            font-size: 1.1rem;
+            text-transform: uppercase;
+            letter-spacing: 4px;
+            transition: 0.1s;
+        }
+        .back-btn:active { background: var(--yellow-glow); }
 
         .hidden { display: none; }
 
-        .terminal {
-            background: #000; color: #0f0; padding: 15px; border-radius: 12px;
-            font-family: 'Consolas', monospace; font-size: 0.75rem; height: 160px; overflow-y: auto;
-            border: 1px solid #222; white-space: pre-wrap; margin-top: 15px;
+        /* ── FLASH CARD ── */
+        .flash-card {
+            background: var(--black-2);
+            border: 1px solid var(--gray);
+            border-top: 4px solid var(--yellow);
+            border-radius: 6px;
+            padding: 28px 24px 20px;
+            margin-bottom: 16px;
+            text-align: center;
+            box-shadow: 0 0 40px rgba(0,0,0,0.6);
         }
 
-        .btn-flash {
-            background: linear-gradient(45deg, #00adb5, #008187); color: white; border: none;
-            padding: 22px; border-radius: 18px; font-weight: 900; width: 100%; font-size: 1.3rem;
-            box-shadow: 0 6px 15px rgba(0, 173, 181, 0.3);
+        .board-title {
+            font-family: 'Barlow Condensed', sans-serif;
+            font-size: 2.4rem;
+            font-weight: 900;
+            color: var(--yellow);
+            text-shadow: 0 0 20px var(--yellow-glow-strong);
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            margin-bottom: 8px;
+            line-height: 1.1;
         }
-        .btn-flash:disabled { background: #333; color: #666; box-shadow: none; transform: none; }
 
         .monitor-badge {
-            display: inline-block; padding: 6px 18px; background: rgba(0, 173, 181, 0.1);
-            color: #00adb5; border: 1px solid #00adb5; border-radius: 50px;
-            font-weight: 700; font-size: 0.85rem;
+            display: inline-block;
+            padding: 6px 20px;
+            background: transparent;
+            color: var(--yellow-dim);
+            border: 1px solid var(--yellow-dim);
+            border-radius: 2px;
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.9rem;
+            letter-spacing: 2px;
+            text-transform: uppercase;
         }
-        .board-title { font-size: 2.6rem; font-weight: 800; color: #fff; margin-bottom: 5px; }
+
+        /* ── DIRECTION SELECTOR ── */
+        #direction-selector-container label {
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.8rem;
+            letter-spacing: 3px;
+            color: var(--text-dim);
+        }
+        .dir-btn {
+            background: var(--black-3);
+            border: 2px solid var(--yellow-dim);
+            color: var(--yellow);
+            border-radius: 3px;
+            padding: 12px 26px;
+            font-size: 1.4rem;
+            cursor: pointer;
+            transition: 0.1s;
+        }
+        .dir-btn:active { background: var(--yellow-glow); }
+        #direction-label {
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 1.3rem;
+            color: var(--yellow);
+            min-width: 100px;
+        }
+
+        /* ── FAST MODE ── */
+        .fast-mode-row {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 20px;
+            padding: 14px;
+            border: 1px solid var(--black-4);
+            border-radius: 4px;
+            background: var(--black-3);
+        }
+        .fast-mode-label {
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.9rem;
+            letter-spacing: 2px;
+            color: var(--text-dim);
+            text-transform: uppercase;
+        }
+        .form-check-input:checked { background-color: var(--yellow) !important; border-color: var(--yellow) !important; }
+        .form-check-input:focus { box-shadow: 0 0 0 3px var(--yellow-glow) !important; }
+
+        /* ── COUNTERS ── */
+        .counters-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+            padding: 0 4px;
+        }
+        .counter-label {
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.75rem;
+            color: var(--text-dim);
+            letter-spacing: 2px;
+            display: block;
+        }
+        .counter-value {
+            font-family: 'Barlow Condensed', sans-serif;
+            font-size: 2.6rem;
+            font-weight: 900;
+            color: var(--yellow);
+            line-height: 1;
+        }
+        #wait-timer .counter-value { color: #ff9800; }
+        #wait-timer .counter-label { color: #a06000; }
+
+        /* ── FLASH BUTTON ── */
+        .btn-flash {
+            background: var(--yellow);
+            color: var(--black);
+            border: none;
+            padding: 22px;
+            border-radius: 4px;
+            font-family: 'Barlow Condensed', sans-serif;
+            font-weight: 900;
+            font-size: 1.7rem;
+            letter-spacing: 5px;
+            text-transform: uppercase;
+            width: 100%;
+            cursor: pointer;
+            box-shadow: 0 4px 24px var(--yellow-glow-strong);
+            transition: 0.1s;
+            margin-bottom: 16px;
+        }
+        .btn-flash:hover { box-shadow: 0 6px 32px var(--yellow-glow-strong); }
+        .btn-flash:active { transform: scale(0.98); box-shadow: none; }
+        .btn-flash:disabled { background: var(--black-4); color: var(--gray); box-shadow: none; cursor: not-allowed; }
+
+        /* ── PROGRESS ── */
+        .progress { height: 8px !important; background: var(--black-4) !important; border-radius: 0 !important; }
+        .progress-bar { background: var(--yellow) !important; }
+        #percent-text {
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.75rem;
+            color: var(--text-dim);
+            letter-spacing: 2px;
+            display: block;
+            margin-top: 6px;
+        }
+
+        /* ── TERMINAL ── */
+        .terminal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 16px;
+            margin-bottom: 4px;
+            padding: 0 2px;
+        }
+        .terminal-label {
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.75rem;
+            color: var(--text-dim);
+            letter-spacing: 3px;
+        }
+        .debug-toggle-btn {
+            background: transparent;
+            border: 1px solid var(--gray);
+            color: var(--gray-light);
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.72rem;
+            letter-spacing: 1px;
+            padding: 4px 12px;
+            border-radius: 2px;
+            cursor: pointer;
+            transition: 0.15s;
+        }
+        .debug-toggle-btn:active { opacity: 0.7; }
+
+        .terminal {
+            background: #000;
+            color: #aaaa00;
+            padding: 14px;
+            border-radius: 3px;
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.82rem;
+            height: 170px;
+            overflow-y: auto;
+            border: 1px solid var(--black-4);
+            border-left: 3px solid var(--yellow-dim);
+            white-space: pre-wrap;
+        }
+        .terminal::-webkit-scrollbar { width: 4px; }
+        .terminal::-webkit-scrollbar-track { background: #000; }
+        .terminal::-webkit-scrollbar-thumb { background: var(--yellow-dim); }
+
+        /* ── DISABLED ── */
+        .menu-btn-disabled {
+            padding: 22px 24px;
+            font-size: 1.3rem;
+            font-weight: 700;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            background: var(--black-2);
+            border: 1px solid #222;
+            border-left: 5px solid #333;
+            margin-bottom: 10px;
+            border-radius: 4px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            color: var(--gray);
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
     </style>
 </head>
 <body>
 
 <div class="container py-4">
-    <div class="text-center mb-5">
-        <h4 style="color: #00adb5; font-weight: bold;">STLink <span style="color: #00adb5; font-weight: bold;">PRO</span></h4>
+    <div class="site-header">
+        <div class="logo">STLink <span>PRO</span></div>
+        <div class="subtitle">▸ FIRMWARE FLASH TOOL ◂</div>
     </div>
 
     <div id="screen-main">
-        <div class="menu-btn" onclick="openMenu('screen-monitor-root')">📺 Плати Монітора <span>→</span></div>
-        <div class="menu-btn" onclick="openMenu('screen-plates')">📂 Плати Індикації <span>→</span></div>
-        <div class="menu-btn" onclick="openMenu('screen-other')">🛠️ Інше <span>→</span></div>
-        <button onclick="updateProject()" class="btn btn-sm" style="background: #1e1e1e; border: 1px solid #00adb5; color: #00adb5;">
-            ☁️ Оновити з хмари
-        </button>
+        <div class="menu-btn" onclick="openMenu('screen-monitor-root')">📺 Плати Монітора <span class="arrow">→</span></div>
+        <div class="menu-btn" onclick="openMenu('screen-plates')">📂 Плати Індикації <span class="arrow">→</span></div>
+        <div class="menu-btn" onclick="openMenu('screen-other')">🛠️ Інше <span class="arrow">→</span></div>
     </div>
 
     <div id="screen-monitor-root" class="hidden">
         <div class="back-btn" onclick="openMenu('screen-main')">← НА ГОЛОВНУ</div>
-        <div class="menu-btn" onclick="openMenu('screen-new-monitor')">📟 Новий монітор <span>→</span></div>
-        <div class="menu-btn" onclick="openMenu('screen-old-raspi')">🍓 Старий на Расбері <span>→</span></div>
-        <div class="menu-btn" onclick="openMenu('screen-old-ctrl')">🎮 Старий на Контроллері <span>→</span></div>
+        <div class="menu-btn" onclick="openMenu('screen-new-monitor')">📟 Новий монітор <span class="arrow">→</span></div>
+        <div class="menu-btn" onclick="openMenu('screen-old-raspi')">🍓 Старий на Расбері <span class="arrow">→</span></div>
+        <div class="menu-btn" onclick="openMenu('screen-old-ctrl')">🎮 Старий на Контроллері <span class="arrow">→</span></div>
     </div>
 
     <div id="screen-new-monitor" class="hidden">
         <div class="back-btn" onclick="openMenu('screen-monitor-root')">← ДО ТИПІВ МОНІТОРІВ</div>
-
-        <div class="fw-bold mb-2 text-muted px-2 small">VGA:</div>
-        <div class="menu-btn" onclick="selectFinal('VGA 3USB', 'PTL_VGA_2(3USB)', 'screen-new-monitor')">3USB <span>→</span></div>
-        <div class="menu-btn" onclick="selectFinal('VGA 4USB', 'PTL_VGA_v3(4USB)', 'screen-new-monitor')">4USB <span>→</span></div>
-
-        <div class="fw-bold mb-2 mt-3 text-muted px-2 small">USB 407 V2:</div>
-        <div class="menu-btn" onclick="selectFinal('USB_407_V2 (3USB)', 'USB_407_V2', 'screen-new-monitor')">3USB <span>→</span></div>
-
-        <div class="fw-bold mb-2 mt-3 text-muted px-2 small">USB 407 V3:</div>
-        <div class="menu-btn" onclick="selectFinal('USB_407_V3 (4USB)', 'PTL_MAINC_USB407_5500_v4(4USB)', 'screen-new-monitor')">4USB <span>→</span></div>
+        <div class="section-label">VGA</div>
+        <div class="menu-btn" onclick="selectFinal('VGA 3USB', 'PTL_VGA_2(3USB)', 'screen-new-monitor')">3USB <span class="arrow">→</span></div>
+        <div class="menu-btn" onclick="selectFinal('VGA 4USB', 'PTL_VGA_v3(4USB)', 'screen-new-monitor')">4USB <span class="arrow">→</span></div>
+        <div class="section-label">USB 407 V2</div>
+        <div class="menu-btn" onclick="selectFinal('USB_407_V2 (3USB)', 'USB_407_V2', 'screen-new-monitor')">3USB <span class="arrow">→</span></div>
+        <div class="section-label">USB 407 V3</div>
+        <div class="menu-btn" onclick="selectFinal('USB_407_V3 (4USB)', 'PTL_MAINC_USB407_5500_v4(4USB)', 'screen-new-monitor')">4USB <span class="arrow">→</span></div>
     </div>
 
     <div id="screen-old-raspi" class="hidden">
         <div class="back-btn" onclick="openMenu('screen-monitor-root')">← ДО ТИПІВ МОНІТОРІВ</div>
-
-        <div class="fw-bold mb-2 text-info px-2 small">ПРОЦ 722:</div>
-        <div class="menu-btn" onclick="selectFinal('R1 722 (Raspi)', 'monitors/raspi/R1__722', 'screen-old-raspi')">R1_722 <span>→</span></div>
-        <div class="menu-btn" onclick="selectFinal('234 722 (Raspi)', 'monitors/common/234__722', 'screen-old-raspi')">234_722 <span>→</span></div>
-
-        <div class="fw-bold mb-2 mt-3 text-info px-2 small">ПРОЦ 105:</div>
-        <div class="menu-btn" onclick="selectFinal('R1 105 (Raspi)', 'monitors/raspi/R1__105', 'screen-old-raspi')">R1_105 <span>→</span></div>
-        <div class="menu-btn" onclick="selectFinal('234 105 (Raspi)', 'monitors/common/234__105', 'screen-old-raspi')">234_105 <span>→</span></div>
+        <div class="section-label">ПРОЦ 722</div>
+        <div class="menu-btn" onclick="selectFinal('R1 722 (Raspi)', 'monitors/raspi/R1__722', 'screen-old-raspi')">R1_722 <span class="arrow">→</span></div>
+        <div class="menu-btn" onclick="selectFinal('234 722 (Raspi)', 'monitors/common/234__722', 'screen-old-raspi')">234_722 <span class="arrow">→</span></div>
+        <div class="section-label">ПРОЦ 105</div>
+        <div class="menu-btn" onclick="selectFinal('R1 105 (Raspi)', 'monitors/raspi/R1__105', 'screen-old-raspi')">R1_105 <span class="arrow">→</span></div>
+        <div class="menu-btn" onclick="selectFinal('234 105 (Raspi)', 'monitors/common/234__105', 'screen-old-raspi')">234_105 <span class="arrow">→</span></div>
     </div>
 
     <div id="screen-old-ctrl" class="hidden">
         <div class="back-btn" onclick="openMenu('screen-monitor-root')">← ДО ТИПІВ МОНІТОРІВ</div>
-
-        <div class="fw-bold mb-2 text-warning px-2 small">ПРОЦ 722:</div>
-        <div class="menu-btn" onclick="selectFinal('K1 722 (Ctrl)', 'monitors/ctrl/K1__722', 'screen-old-ctrl')">K1_722 <span>→</span></div>
-        <div class="menu-btn" onclick="selectFinal('234 722 (Ctrl)', 'monitors/common/234__722', 'screen-old-ctrl')">234_722 <span>→</span></div>
-
-        <div class="fw-bold mb-2 mt-3 text-warning px-2 small">ПРОЦ 105:</div>
-        <div class="menu-btn" onclick="selectFinal('K1 105 (Ctrl)', 'monitors/ctrl/K1__105', 'screen-old-ctrl')">K1_105 <span>→</span></div>
-        <div class="menu-btn" onclick="selectFinal('234 105 (Ctrl)', 'monitors/common/234__105', 'screen-old-ctrl')">234_105 <span>→</span></div>
+        <div class="section-label">ПРОЦ 722</div>
+        <div class="menu-btn" onclick="selectFinal('K1 722 (Ctrl)', 'monitors/ctrl/K1__722', 'screen-old-ctrl')">K1_722 <span class="arrow">→</span></div>
+        <div class="menu-btn" onclick="selectFinal('234 722 (Ctrl)', 'monitors/common/234__722', 'screen-old-ctrl')">234_722 <span class="arrow">→</span></div>
+        <div class="section-label">ПРОЦ 105</div>
+        <div class="menu-btn" onclick="selectFinal('K1 105 (Ctrl)', 'monitors/ctrl/K1__105', 'screen-old-ctrl')">K1_105 <span class="arrow">→</span></div>
+        <div class="menu-btn" onclick="selectFinal('234 105 (Ctrl)', 'monitors/common/234__105', 'screen-old-ctrl')">234_105 <span class="arrow">→</span></div>
     </div>
 
     <div id="screen-pbl-rshk" class="hidden">
         <div class="back-btn" onclick="openMenu('screen-plates')">← НАЗАД</div>
-        <div class="card bg-dark p-3 mb-3 border-0 text-center" style="border-radius: 20px;">
-            <h3 class="text-white fw-bold">PBL_RSHK</h3>
-            <p class="text-muted small">Оберіть діапазон напрямків:</p>
-
-            <div class="row g-2">
-                <div id="pbl-grid" class="d-grid shadow-sm" style="grid-template-columns: 1fr 1fr; gap: 10px;">
-                </div>
-            </div>
-        </div>
+        <div id="pbl-grid" class="d-grid" style="grid-template-columns: 1fr 1fr; gap: 10px;"></div>
     </div>
 
     <div id="screen-plates" class="hidden">
         <div class="back-btn" onclick="openMenu('screen-main')">← НА ГОЛОВНУ</div>
-        <div class="menu-btn" onclick="openModel('SR-01')">📟 SR-01 <span>→</span></div>
-        <div class="menu-btn" onclick="openModel('SR-04_06')">📟 SR-04/06 <span>→</span></div>
-
-        <div class="menu-btn" onclick="openMenu('screen-stm-u4')">📟 STM_U4 (16-канальна) <span>→</span></div>
-
-        <div class="menu-btn" onclick="selectFinal('PBL_PTL', 'PTL_LED2812_36CELL_F030', 'screen-plates')">📟 PBL_PTL (36 Напрямків) <span>→</span></div>
-        <div class="menu-btn" onclick="openPblRshk()">📟 PBL_RSHK (Напрямки) <span>→</span></div>
+        <div class="menu-btn" onclick="openModel('SR-01')">📟 SR-01 <span class="arrow">→</span></div>
+        <div class="menu-btn" onclick="openModel('SR-04_06')">📟 SR-04/06 <span class="arrow">→</span></div>
+        <div class="menu-btn" onclick="openMenu('screen-stm-u4')">📟 STM_U4 (16-канальна) <span class="arrow">→</span></div>
+        <div class="menu-btn" onclick="selectFinal('PBL_PTL', 'PTL_LED2812_36CELL_F030', 'screen-plates')">📟 PBL_PTL (36 Напрямків) <span class="arrow">→</span></div>
+        <div class="menu-btn" onclick="openPblRshk()">📟 PBL_RSHK (Напрямки) <span class="arrow">→</span></div>
     </div>
 
     <div id="screen-stm-u4" class="hidden">
         <div class="back-btn" onclick="openMenu('screen-plates')">← НАЗАД</div>
-        <h6 class="mb-4 text-center text-muted">Виберіть тип прошивки для <span class="text-info">STM_U4</span>:</h6>
-
+        <div class="section-label">Тип прошивки — STM_U4</div>
         <div class="menu-btn" onclick="selectFinal('STM_U4 RSHK', 'PTL_16CH_RSHK', 'screen-stm-u4')">
-            🛠️ RSHK (PTL_16CH) <span>→</span>
+            🛠️ RSHK (PTL_16CH) <span class="arrow">→</span>
         </div>
-
-        <div class="menu-btn" style="opacity: 0.5; filter: grayscale(1); cursor: not-allowed;">
-            📄 Листи (Поки порожньо) <span>🔒</span>
-        </div>
+        <div class="menu-btn-disabled">📄 Листи (Поки порожньо) <span>🔒</span></div>
     </div>
 
     <div id="screen-monitor" class="hidden">
         <div class="back-btn" onclick="openMenu('screen-plates')">← ДО МОДЕЛЕЙ ІНДИКАЦІЇ</div>
-        <h6 class="mb-4 text-center text-muted">Ревізія для <span id="monitor-model-name" class="text-info"></span>:</h6>
-
+        <div class="section-label">Ревізія — <span id="monitor-model-name"></span></div>
         <div class="menu-btn" onclick="selectFinal(selectedModel.replace('_', '/') + ' (Старий)', selectedModel + '_old', 'screen-monitor')">
-            📺 Старий монітор <span>→</span>
+            📺 Старий монітор <span class="arrow">→</span>
         </div>
-
         <div class="menu-btn" onclick="selectFinal(selectedModel.replace('_', '/') + ' (Новий)', selectedModel + '_new', 'screen-monitor')">
-            📺 Новий монітор <span>→</span>
+            📺 Новий монітор <span class="arrow">→</span>
         </div>
     </div>
 
     <div id="screen-flash" class="hidden">
         <div id="back-to-prev-screen" class="back-btn">← НАЗАД</div>
 
-        <div class="card bg-dark p-4 mb-3 border-0 text-center shadow-lg" style="border-radius: 25px;">
-            <div id="display-name" class="board-title" style="font-size: 1.8rem;">---</div>
-            <div class="mb-3"><span id="display-sub" class="monitor-badge">READY</span></div>
+        <div class="flash-card">
+            <div id="display-name" class="board-title">---</div>
+            <div class="mb-4"><span id="display-sub" class="monitor-badge">READY</span></div>
 
             <div id="direction-selector-container" class="hidden mb-4">
-                <label class="text-muted small d-block mb-2 fw-bold">НАПРЯМКИ:</label>
-                <div class="d-flex justify-content-center align-items-center gap-3">
-                    <button class="btn btn-outline-info" onclick="stepDirection(-1)" style="border-radius: 12px; padding: 10px 20px;">←</button>
-                    <div id="direction-label" class="fw-bold text-white" style="min-width: 120px; font-size: 1.1rem;">1-5</div>
-                    <button class="btn btn-outline-info" onclick="stepDirection(1)" style="border-radius: 12px; padding: 10px 20px;">→</button>
+                <div class="section-label" style="text-align:center; border:none; padding:0; margin-bottom:10px;">НАПРЯМКИ</div>
+                <div style="display:flex; justify-content:center; align-items:center; gap:16px;">
+                    <button class="dir-btn" onclick="stepDirection(-1)">←</button>
+                    <div id="direction-label">1-5</div>
+                    <button class="dir-btn" onclick="stepDirection(1)">→</button>
                 </div>
             </div>
 
-            <div class="d-flex justify-content-center gap-2 mb-4">
-    
-                <div style="display: flex; align-items: center; background: #222; border: 1px solid #444; border-radius: 12px; padding: 8px 12px;">
-                    <div class="form-check form-switch m-0 p-0" style="display: flex; align-items: center;">
-                        <input class="form-check-input" type="checkbox" id="fastMode" style="width: 36px; height: 18px; margin: 0; cursor: pointer; float: none;">
-                        <label class="fw-bold text-info" for="fastMode" style="font-size: 0.75rem; margin-left: 8px; cursor: pointer; user-select: none;">AUTO</label>
-                    </div>
-                </div>
-
-                <div style="display: flex; align-items: center; background: #222; border: 1px solid #444; border-radius: 12px; padding: 8px 12px;">
-                    <div class="form-check form-switch m-0 p-0" style="display: flex; align-items: center;">
-                        <input class="form-check-input" type="checkbox" id="showFullLog" style="width: 36px; height: 18px; margin: 0; cursor: pointer; float: none;">
-                        <label class="fw-bold text-warning" for="showFullLog" style="font-size: 0.75rem; margin-left: 8px; cursor: pointer; user-select: none;">DEBUG</label>
-                    </div>
-                </div>
-
+            <div class="fast-mode-row">
+                <span class="fast-mode-label">FAST MODE (AUTO)</span>
+                <input class="form-check-input" type="checkbox" id="fastMode" style="width:50px; height:25px; cursor:pointer;">
             </div>
 
-            <div class="d-flex justify-content-between mb-3 px-2">
+            <div class="counters-row">
                 <div class="text-start">
-                    <small class="h4 fw-bold text-info">ПРОШИТО:</small>
-                    <span id="session-count" class="h4 fw-bold text-info">0</span>
+                    <span class="counter-label">ПРОШИТО</span>
+                    <span class="counter-value" id="session-count">0</span>
                 </div>
                 <div id="wait-timer" class="text-end hidden">
-                    <small class="text-warning d-block">READY IN:</small>
-                    <span id="timer-seconds" class="h4 fw-bold text-warning">3s</span>
+                    <span class="counter-label">READY IN</span>
+                    <span class="counter-value" id="timer-seconds">3s</span>
                 </div>
             </div>
 
-            <button id="flash-btn" class="btn-flash mb-3" onclick="triggerFlash()">ПРОШИТИ</button>
+            <button id="flash-btn" class="btn-flash" onclick="triggerFlash()">▶ ПРОШИТИ</button>
 
-            <div class="progress mb-2" style="height: 14px; background: #222; border-radius: 10px;">
-                <div id="bar" class="progress-bar bg-info progress-bar-striped progress-bar-animated" style="width: 0%"></div>
+            <div class="progress mb-1">
+                <div id="bar" class="progress-bar" style="width: 0%"></div>
             </div>
-            <small id="percent-text" class="text-muted fw-bold">Очікування</small>
+            <small id="percent-text">ОЧІКУВАННЯ</small>
         </div>
 
-        <div id="log" class="terminal text-start shadow-sm">[SYS]: Готово...</div>
+        <div class="terminal-header">
+            <span class="terminal-label">▸ SYS LOG</span>
+            <button id="debug-toggle-btn" class="debug-toggle-btn" onclick="toggleDebug()">🐛 DEBUG: OFF</button>
+        </div>
+        <div id="log" class="terminal">[SYS]: Готово...</div>
     </div>
 </div>
 
