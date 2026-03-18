@@ -258,21 +258,50 @@ function runCooldown(seconds) {
 }
 
 async function runUpdate() {
-    const btn = document.getElementById('update-btn');
-    btn.innerText = '⏳ Оновлення...';
+    if (!confirm('Оновити з GitHub?')) return;
+
+    // Overlay
+    const overlay = document.createElement('div');
+    overlay.style.cssText = `
+        position:fixed; top:0; left:0; width:100%; height:100%;
+        background:rgba(0,0,0,0.85); z-index:9999;
+        display:flex; flex-direction:column;
+        justify-content:center; align-items:center; gap:16px;
+    `;
+    overlay.innerHTML = `
+        <div style="font-family:'Share Tech Mono',monospace; font-size:1.4rem; color:#FFD600; letter-spacing:3px;">⟳ ОНОВЛЕННЯ...</div>
+        <div id="update-log" style="font-family:'Share Tech Mono',monospace; font-size:0.75rem; color:#888; max-width:320px; text-align:center; line-height:1.6;"></div>
+    `;
+    document.body.appendChild(overlay);
+
+    const log = document.getElementById('update-log');
+
     try {
+        log.innerText = 'Підключення до GitHub...';
         const res = await fetch('/update');
         const data = await res.json();
+
         if (data.status === 'success') {
-            btn.innerText = '✅ Оновлено! Перезавантаж сторінку';
-            btn.style.borderLeftColor = '#00ff88';
-            btn.style.color = '#00ff88';
+            overlay.querySelector('div').style.color = '#00ff88';
+            overlay.querySelector('div').innerText = '✓ ГОТОВО';
+            log.innerText = data.output || 'Оновлено успішно';
+            log.style.color = '#00ff88';
+            setTimeout(() => {
+                document.body.removeChild(overlay);
+                location.reload();
+            }, 2500);
         } else {
-            btn.innerText = '❌ Помилка — див. консоль';
-            btn.style.borderLeftColor = '#ff4444';
-            console.error(data.output);
+            overlay.querySelector('div').style.color = '#ff4444';
+            overlay.querySelector('div').innerText = '✗ ПОМИЛКА';
+            log.innerText = data.output || 'Щось пішло не так';
+            log.style.color = '#ff4444';
+            setTimeout(() => document.body.removeChild(overlay), 4000);
         }
     } catch(e) {
-        btn.innerText = '❌ Збій з\'єднання';
+        overlay.querySelector('div').style.color = '#ff4444';
+        overlay.querySelector('div').innerText = '✗ ЗБІЙ';
+        log.innerText = e.message;
+        log.style.color = '#ff4444';
+        setTimeout(() => document.body.removeChild(overlay), 4000);
     }
 }

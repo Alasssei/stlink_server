@@ -16,10 +16,10 @@
             --black-2: #111111;
             --black-3: #1a1a1a;
             --black-4: #222222;
-            --gray: #444;
+            --gray: #888;
             --gray-light: #666;
             --text: #e8d87a;
-            --text-dim: #8a7a2a;
+            --text-dim: #b8a840;
         }
 
         * { box-sizing: border-box; }
@@ -334,16 +334,16 @@
 <body>
 
 <div class="container py-4">
-    <div class="site-header">
+    <div class="site-header" style="position:relative;">
         <div class="logo">STLink <span>PRO</span></div>
         <div class="subtitle">▸ FIRMWARE FLASH TOOL ◂</div>
+        <span id="update-btn" onclick="runUpdate()" style="position:absolute; top:0; right:0; font-family:'Share Tech Mono',monospace; font-size:1.8rem; color:#888; letter-spacing:1px; cursor:pointer; padding:4px 8px; user-select:none;">⟳</span>
     </div>
 
     <div id="screen-main">
         <div class="menu-btn" onclick="openMenu('screen-monitor-root')">📺 Плати Монітора <span class="arrow">→</span></div>
         <div class="menu-btn" onclick="openMenu('screen-plates')">📂 Плати Індикації <span class="arrow">→</span></div>
         <div class="menu-btn" onclick="openMenu('screen-other')">🛠️ Інше <span class="arrow">→</span></div>
-        <div class="menu-btn" onclick="runUpdate()" id="update-btn">🔄 Оновити з GitHub <span class="arrow">→</span></div>
     </div>
 
     <div id="screen-monitor-root" class="hidden">
@@ -467,5 +467,15 @@
 </div>
 
 <script src="/static/script.js"></script>
+<div id="confirm-overlay" class="hidden" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); z-index:9999; display:flex; justify-content:center; align-items:center;">
+    <div style="background:#111; border:1px solid #444; border-top:3px solid #FFD600; border-radius:6px; padding:32px 28px; max-width:300px; width:90%; text-align:center;">
+        <div style="font-family:'Share Tech Mono',monospace; font-size:0.7rem; color:#b8a840; letter-spacing:3px; margin-bottom:12px;">ПІДТВЕРДЖЕННЯ</div>
+        <div style="font-family:'Barlow Condensed',sans-serif; font-weight:700; font-size:1.3rem; color:#FFD600; margin-bottom:24px;">Оновити з GitHub?</div>
+        <div style="display:flex; gap:12px;">
+            <button onclick="confirmUpdate(false)" style="flex:1; padding:14px; background:transparent; border:1px solid #444; color:#888; font-family:'Barlow Condensed',sans-serif; font-weight:700; font-size:1.1rem; letter-spacing:2px; border-radius:4px; cursor:pointer;">СКАСУВАТИ</button>
+            <button onclick="confirmUpdate(true)" style="flex:1; padding:14px; background:#FFD600; border:none; color:#000; font-family:'Barlow Condensed',sans-serif; font-weight:900; font-size:1.1rem; letter-spacing:2px; border-radius:4px; cursor:pointer;">▶ ТАК</button>
+        </div>
+    </div>
+</div>
 </body>
 </html>
