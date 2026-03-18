@@ -93,10 +93,18 @@ sudo systemctl daemon-reload
 sudo systemctl enable stlink
 sudo systemctl restart stlink
 
+echo "[+] Вимкнення непотрібних сервісів..."
+sudo systemctl disable cloud-init-main.service 2>/dev/null || true
+sudo systemctl disable cloud-init-local.service 2>/dev/null || true
+sudo systemctl disable cloud-final.service 2>/dev/null || true
+sudo systemctl disable cloud-config.service 2>/dev/null || true
+sudo systemctl disable ModemManager.service 2>/dev/null || true
+sudo systemctl disable NetworkManager-wait-online.service 2>/dev/null || true
+
 echo ""
 echo "================================================"
 echo "   Готово! Сервер запущено."
 echo "   WiFi: STLink-Server / 12345678"
 echo "   Відкрий: http://10.42.0.1:5000"
-echo "   Або:     http://192.168.1.10:5000"
+echo "   Або: підключи ethernet до роутера"
 echo "================================================"
