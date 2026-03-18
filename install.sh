@@ -61,8 +61,8 @@ sudo nmcli connection add \
     con-name eth0-static \
     autoconnect yes \
     -- \
-    ipv4.method manual \
-    ipv4.addresses "192.168.1.10/24" \
+    ipv4.method auto \
+    ipv4.dns "8.8.8.8" \
     connection.autoconnect-priority 100
 sudo nmcli connection up eth0-static 2>/dev/null || true
 
