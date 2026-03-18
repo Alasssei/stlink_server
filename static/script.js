@@ -244,3 +244,25 @@
             }
         }, 1000);
     }
+
+    async function updateProject() {
+    if (!confirm("Ви впевнені, що хочете оновити проект з GitHub?")) return;
+
+    alert("Починаю оновлення... Зачекайте 5-10 секунд.");
+    
+    try {
+        const response = await fetch('/update_system');
+        const data = await response.json();
+        
+        if (data.status === "success") {
+            alert("✅ Система оновлена! Сторінка зараз перезавантажиться.");
+            setTimeout(() => { location.reload(); }, 3000);
+        } else {
+            alert("❌ Помилка: " + data.message);
+        }
+    } catch (err) {
+        // Оскільки сервер перезапускається, з'єднання може обірватися - це нормально
+        alert("Сервер перезавантажується... Зачекайте.");
+        setTimeout(() => { location.reload(); }, 5000);
+    }
+}

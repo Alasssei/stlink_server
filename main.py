@@ -25,6 +25,29 @@ def check_connection():
     except:
         return jsonify({"status": "error"}), 500
 
+@app.route('/update_system')
+def update_system():
+    try:
+        # 1. Стягуємо оновлення з GitHub
+        # Оскільки ми налаштували SSH-ключі, пароль не запитає
+        pull_result = subprocess.run(
+            ['git', 'pull', 'origin', 'main'], 
+            cwd='/home/aboba/stlink_server', 
+            capture_output=True, text=True
+        )
+        
+        if pull_result.returncode != 0:
+            return jsonify({"status": "error", "message": pull_result.stderr})
+
+        # 2. Перезапускаємо сервіс (через 1 секунду, щоб встигнути відповісти браузеру)
+        # ВАЖЛИВО: Переконайся, що назва сервісу вірна (наприклад, stlink.service)
+        os.system('sleep 1 && sudo systemctl restart stlink.service &')
+        
+        return jsonify({"status": "success", "message": "Оновлення успішне! Перезапуск..."})
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)})
+
+
 # Обробляємо обидва варіанти, які можуть летіти з фронтенда
 @app.route('/start_flash')
 @app.route('/flash')
