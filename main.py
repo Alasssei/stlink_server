@@ -4,7 +4,7 @@ from flask import Flask, render_template, request, jsonify
 
 app = Flask(__name__)
 
-# Шляхи на Raspberry Pi11
+# Шляхи на Raspberry Pi
 BASE_DIR = "/home/aboba/stlink_server"
 FIRMWARE_DIR = os.path.join(BASE_DIR, "firmwares")
 
