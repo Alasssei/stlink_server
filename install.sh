@@ -2,7 +2,7 @@
 
 set -e
 
-REPO_URL="git@github.com:Alasssei/stlink_server.git"
+REPO_URL="https://github.com/Alasssei/stlink_server.git"
 APP_DIR="/home/aboba/stlink_server"
 USER="aboba"
 
