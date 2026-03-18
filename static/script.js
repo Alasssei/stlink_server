@@ -258,8 +258,17 @@ function runCooldown(seconds) {
 }
 
 async function runUpdate() {
-    if (!confirm('Оновити з GitHub?')) return;
+    document.getElementById('confirm-overlay').classList.remove('hidden');
+}
 
+function confirmUpdate(ok) {
+    document.getElementById('confirm-overlay').classList.add('hidden');
+    if (!ok) return;
+    doUpdate();
+}
+
+
+async function doUpdate() {
     // Overlay
     const overlay = document.createElement('div');
     overlay.style.cssText = `
