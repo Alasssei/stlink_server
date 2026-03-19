@@ -37,6 +37,11 @@ fi
 
 # ── 4. МЕРЕЖА — ТОЧКА ДОСТУПУ ──
 echo "[4/7] Налаштування WiFi точки доступу (STLink-Server)..."
+sudo raspi-config nonint do_wifi_country UA
+sudo rfkill unblock wifi
+sleep 2
+sudo ip link set wlan0 up
+sleep 1
 sudo nmcli connection delete MyHotspot 2>/dev/null || true
 sudo nmcli connection add \
     type wifi \
@@ -52,8 +57,8 @@ sudo nmcli connection add \
     connection.autoconnect-priority 50
 sudo nmcli connection up MyHotspot ifname wlan0 2>/dev/null || true
 
-# ── 5. МЕРЕЖА — СТАТИЧНИЙ ETHERNET ──
-echo "[5/7] Налаштування Ethernet (192.168.1.10)..."
+# ── 5. МЕРЕЖА — ETHERNET ──
+echo "[5/7] Налаштування Ethernet..."
 sudo nmcli connection delete eth0-static 2>/dev/null || true
 sudo nmcli connection add \
     type ethernet \
