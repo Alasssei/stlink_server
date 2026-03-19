@@ -50,7 +50,7 @@ sudo nmcli connection add \
     wifi-sec.psk "12345678" \
     ipv4.method shared \
     connection.autoconnect-priority 50
-sudo nmcli connection up MyHotspot
+sudo nmcli connection up MyHotspot ifname wlan0 2>/dev/null || true
 
 # ── 5. МЕРЕЖА — СТАТИЧНИЙ ETHERNET ──
 echo "[5/7] Налаштування Ethernet (192.168.1.10)..."
