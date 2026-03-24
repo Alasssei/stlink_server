@@ -11,22 +11,24 @@ echo "   STLink Server - Auto Install Script"
 echo "================================================"
 
 # ── 1. ОНОВЛЕННЯ СИСТЕМИ ──
-echo "[1/7] Оновлення системи..."
+echo "[1/8] Оновлення системи..."
 sudo apt-get update -q
 sudo apt-get upgrade -y -q
 
 # ── 2. ВСТАНОВЛЕННЯ ЗАЛЕЖНОСТЕЙ ──
-echo "[2/7] Встановлення залежностей..."
+echo "[2/8] Встановлення залежностей..."
 sudo apt-get install -y -q \
     python3 \
     python3-pip \
     python3-flask \
     openocd \
     git \
-    usbutils
+    usbutils \
+    xserver-xorg x11-xserver-utils xinit \
+    chromium unclutter fonts-noto-color-emoji xinput
 
 # ── 3. КЛОНУВАННЯ РЕПОЗИТОРІЮ ──
-echo "[3/7] Клонування репозиторію..."
+echo "[3/8] Клонування репозиторію..."
 if [ -d "$APP_DIR" ]; then
     echo "  Папка вже існує — оновлюємо..."
     cd "$APP_DIR"
@@ -36,7 +38,7 @@ else
 fi
 
 # ── 4. МЕРЕЖА — ТОЧКА ДОСТУПУ ──
-echo "[4/7] Налаштування WiFi точки доступу (STLink-Server)..."
+echo "[4/8] Налаштування WiFi точки доступу (STLink-Server)..."
 sudo raspi-config nonint do_wifi_country UA
 sudo rfkill unblock wifi
 sleep 2
@@ -58,7 +60,7 @@ sudo nmcli connection add \
 sudo nmcli connection up MyHotspot ifname wlan0 2>/dev/null || true
 
 # ── 5. МЕРЕЖА — ETHERNET ──
-echo "[5/7] Налаштування Ethernet..."
+echo "[5/8] Налаштування Ethernet..."
 sudo nmcli connection delete eth0-static 2>/dev/null || true
 sudo nmcli connection add \
     type ethernet \
@@ -72,17 +74,12 @@ sudo nmcli connection add \
 sudo nmcli connection up eth0-static 2>/dev/null || true
 
 # ── 6. SUDOERS ──
-echo "[6/7] Налаштування sudoers..."
+echo "[6/8] Налаштування sudoers..."
 echo "aboba ALL=(ALL) NOPASSWD: ALL" | sudo tee /etc/sudoers.d/aboba > /dev/null
 sudo chmod 440 /etc/sudoers.d/aboba
 
-# ── ДИСПЛЕЙ ──
-echo "[+] Налаштування дисплея Hosyond 3.5..."
-
-# Пакети
-sudo apt-get install -y -q \
-    xserver-xorg x11-xserver-utils xinit \
-    chromium unclutter fonts-noto-color-emoji xinput
+# ── 7. ДИСПЛЕЙ ──
+echo "[7/8] Налаштування дисплея Hosyond 3.5..."
 
 # Xwrapper
 echo 'allowed_users=anybody
@@ -117,44 +114,12 @@ Section "Screen"
 EndSection
 EOF2
 
-# config.txt
+# config.txt — дисплей
 sudo sed -i 's/dtoverlay=vc4-kms-v3d/#dtoverlay=vc4-kms-v3d/' /boot/firmware/config.txt
 grep -q 'dtoverlay=piscreen' /boot/firmware/config.txt || echo 'dtparam=spi=on
 dtoverlay=piscreen,speed=32000000,rotate=90' | sudo tee -a /boot/firmware/config.txt
 
-# Kiosk сервіси
-sudo tee /etc/systemd/system/kiosk.service > /dev/null <<EOF2
-[Unit]
-Description=Kiosk Display
-After=stlink.service
-Requires=stlink.service
-[Service]
-User=$USER
-Environment=FRAMEBUFFER=/dev/fb1
-ExecStartPre=/bin/sleep 5
-ExecStart=/bin/bash -c "FRAMEBUFFER=/dev/fb1 startx -- -nocursor"
-Restart=always
-RestartSec=5
-[Install]
-WantedBy=multi-user.target
-EOF2
-
-sudo tee /etc/systemd/system/chromium.service > /dev/null <<EOF2
-[Unit]
-Description=Chromium Kiosk
-After=kiosk.service
-Requires=kiosk.service
-[Service]
-User=$USER
-Environment=DISPLAY=:0
-ExecStartPre=/bin/sleep 8
-ExecStart=chromium --kiosk --no-sandbox --disable-gpu --window-size=480,320 --window-position=0,0 --disable-session-crashed-bubble --disable-restore-session-state --no-first-run --disable-infobars --disable-features=TranslateUI http://localhost:5000/touch
-Restart=always
-RestartSec=5
-[Install]
-WantedBy=multi-user.target
-EOF2
-
+# Chromium профіль — вимкнути переклад
 mkdir -p /home/$USER/.config/chromium/Default
 cat > /home/$USER/.config/chromium/Default/Preferences << 'EOF2'
 {
@@ -163,11 +128,9 @@ cat > /home/$USER/.config/chromium/Default/Preferences << 'EOF2'
 }
 EOF2
 
-sudo systemctl enable kiosk.service chromium.service
+# ── 8. SYSTEMD СЕРВІСИ ──
+echo "[8/8] Створення systemd сервісів..."
 
-
-# ── 7. SYSTEMD СЕРВІС ──
-echo "[7/7] Створення systemd сервісу..."
 sudo tee /etc/systemd/system/stlink.service > /dev/null <<EOF
 [Unit]
 Description=ST-Link Web Server
@@ -184,10 +147,65 @@ RestartSec=5
 WantedBy=multi-user.target
 EOF
 
-sudo systemctl daemon-reload
-sudo systemctl enable stlink
-sudo systemctl restart stlink
+sudo tee /etc/systemd/system/kiosk.service > /dev/null <<EOF
+[Unit]
+Description=Kiosk Display
+After=stlink.service
+Requires=stlink.service
 
+[Service]
+User=$USER
+Environment=FRAMEBUFFER=/dev/fb1
+ExecStartPre=/bin/sleep 5
+ExecStart=/bin/bash -c "FRAMEBUFFER=/dev/fb1 startx -- -nocursor"
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+sudo tee /etc/systemd/system/chromium.service > /dev/null <<EOF
+[Unit]
+Description=Chromium Kiosk
+After=kiosk.service
+Requires=kiosk.service
+
+[Service]
+User=$USER
+Environment=DISPLAY=:0
+ExecStartPre=/bin/sleep 8
+ExecStartPre=/bin/bash -c 'killall chromium 2>/dev/null; true'
+ExecStart=chromium \
+  --kiosk \
+  --no-sandbox \
+  --disable-gpu \
+  --window-size=480,320 \
+  --window-position=0,0 \
+  --disable-session-crashed-bubble \
+  --disable-restore-session-state \
+  --no-first-run \
+  --disable-infobars \
+  --disable-features=TranslateUI,Translate \
+  --disable-translate \
+  --lang=uk-UA \
+  http://localhost:5000/touch
+Restart=on-failure
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+sudo systemctl daemon-reload
+sudo systemctl enable stlink.service kiosk.service chromium.service
+sudo systemctl restart stlink.service
+
+# Автологін
+echo "[+] Налаштування автологіну..."
+sudo raspi-config nonint do_boot_behaviour B2
+
+# Вимкнення непотрібних сервісів
 echo "[+] Вимкнення непотрібних сервісів..."
 sudo systemctl disable cloud-init-main.service 2>/dev/null || true
 sudo systemctl disable cloud-init-local.service 2>/dev/null || true
@@ -198,7 +216,7 @@ sudo systemctl disable NetworkManager-wait-online.service 2>/dev/null || true
 
 echo ""
 echo "================================================"
-echo "   Готово! Сервер запущено."
+echo "   Готово! Перезавантаж: sudo reboot"
 echo "   WiFi: STLink-Server / 12345678"
 echo "   Відкрий: http://10.42.0.1:5000"
 echo "   Або: підключи ethernet до роутера"
