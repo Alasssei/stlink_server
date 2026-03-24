@@ -155,6 +155,14 @@ RestartSec=5
 WantedBy=multi-user.target
 EOF2
 
+mkdir -p /home/$USER/.config/chromium/Default
+cat > /home/$USER/.config/chromium/Default/Preferences << 'EOF2'
+{
+  "translate":{"enabled":false},
+  "translate_blocked_languages":["uk","ru"]
+}
+EOF2
+
 sudo systemctl enable kiosk.service chromium.service
 
 
