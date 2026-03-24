@@ -12,6 +12,13 @@ FIRMWARE_DIR = os.path.join(BASE_DIR, "firmwares")
 def touch():
     return render_template('index_touch.html')
 
+@app.route('/get_ip')
+def get_ip():
+    try:
+        result = subprocess.run(['hostname', '-I'], capture_output=True, text=True)
+        return jsonify({"ip": result.stdout.strip()})
+    except Exception as e:
+        return jsonify({"ip": str(e)})
 
 @app.route('/')
 def index():
