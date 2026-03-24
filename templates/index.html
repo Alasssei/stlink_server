@@ -330,26 +330,32 @@
             cursor: not-allowed;
         }
 
-        #confirm-overlay:not(.hidden) {
-            display: flex;
-        }
+        #confirm-overlay:not(.hidden) { display: flex; }
     </style>
 </head>
 <body>
 
 <div class="container py-4">
-    <div class="site-header" style="position:relative;">
+    <div class="site-header">
         <div class="logo">STLink <span>PRO</span></div>
         <div class="subtitle">▸ FIRMWARE FLASH TOOL ◂</div>
-        <span id="update-btn" onclick="runUpdate()" style="position:absolute; top:0; right:0; font-family:'Share Tech Mono',monospace; font-size:1.8rem; color:#888; letter-spacing:1px; cursor:pointer; padding:4px 8px; user-select:none;">⟳</span>
     </div>
 
+    <!-- ═══════════════════ MAIN ═══════════════════ -->
     <div id="screen-main">
         <div class="menu-btn" onclick="openMenu('screen-monitor-root')">📺 Плати Монітора <span class="arrow">→</span></div>
         <div class="menu-btn" onclick="openMenu('screen-plates')">📂 Плати Індикації <span class="arrow">→</span></div>
         <div class="menu-btn" onclick="openMenu('screen-other')">🛠️ Інше <span class="arrow">→</span></div>
     </div>
 
+    <!-- ═══════════════════ OTHER ═══════════════════ -->
+    <div id="screen-other" class="hidden">
+        <div class="back-btn" onclick="openMenu('screen-main')">← НА ГОЛОВНУ</div>
+        <div class="menu-btn" onclick="runUpdate()">⟳ Оновлення з GitHub <span class="arrow">→</span></div>
+        <div class="menu-btn" onclick="showIP()">🌐 Мережа / IP <span class="arrow">→</span></div>
+    </div>
+
+    <!-- ═══════════════════ MONITOR ROOT ═══════════════════ -->
     <div id="screen-monitor-root" class="hidden">
         <div class="back-btn" onclick="openMenu('screen-main')">← НА ГОЛОВНУ</div>
         <div class="menu-btn" onclick="openMenu('screen-new-monitor')">📟 Новий монітор <span class="arrow">→</span></div>
@@ -357,6 +363,7 @@
         <div class="menu-btn" onclick="openMenu('screen-old-ctrl')">🎮 Старий на Контроллері <span class="arrow">→</span></div>
     </div>
 
+    <!-- ═══════════════════ NEW MONITOR ═══════════════════ -->
     <div id="screen-new-monitor" class="hidden">
         <div class="back-btn" onclick="openMenu('screen-monitor-root')">← ДО ТИПІВ МОНІТОРІВ</div>
         <div class="section-label">VGA</div>
@@ -368,6 +375,7 @@
         <div class="menu-btn" onclick="selectFinal('USB_407_V3 (4USB)', 'PTL_MAINC_USB407_5500_v4(4USB)', 'screen-new-monitor')">4USB <span class="arrow">→</span></div>
     </div>
 
+    <!-- ═══════════════════ OLD RASPI ═══════════════════ -->
     <div id="screen-old-raspi" class="hidden">
         <div class="back-btn" onclick="openMenu('screen-monitor-root')">← ДО ТИПІВ МОНІТОРІВ</div>
         <div class="section-label">ПРОЦ 722</div>
@@ -378,6 +386,7 @@
         <div class="menu-btn" onclick="selectFinal('234 105 (Raspi)', 'monitors/common/234__105', 'screen-old-raspi')">234_105 <span class="arrow">→</span></div>
     </div>
 
+    <!-- ═══════════════════ OLD CTRL ═══════════════════ -->
     <div id="screen-old-ctrl" class="hidden">
         <div class="back-btn" onclick="openMenu('screen-monitor-root')">← ДО ТИПІВ МОНІТОРІВ</div>
         <div class="section-label">ПРОЦ 722</div>
@@ -388,11 +397,13 @@
         <div class="menu-btn" onclick="selectFinal('234 105 (Ctrl)', 'monitors/common/234__105', 'screen-old-ctrl')">234_105 <span class="arrow">→</span></div>
     </div>
 
+    <!-- ═══════════════════ PBL RSHK ═══════════════════ -->
     <div id="screen-pbl-rshk" class="hidden">
         <div class="back-btn" onclick="openMenu('screen-plates')">← НАЗАД</div>
         <div id="pbl-grid" class="d-grid" style="grid-template-columns: 1fr 1fr; gap: 10px;"></div>
     </div>
 
+    <!-- ═══════════════════ PLATES ═══════════════════ -->
     <div id="screen-plates" class="hidden">
         <div class="back-btn" onclick="openMenu('screen-main')">← НА ГОЛОВНУ</div>
         <div class="menu-btn" onclick="openModel('SR-01')">📟 SR-01 <span class="arrow">→</span></div>
@@ -402,6 +413,7 @@
         <div class="menu-btn" onclick="openPblRshk()">📟 PBL_RSHK (Напрямки) <span class="arrow">→</span></div>
     </div>
 
+    <!-- ═══════════════════ STM_U4 ═══════════════════ -->
     <div id="screen-stm-u4" class="hidden">
         <div class="back-btn" onclick="openMenu('screen-plates')">← НАЗАД</div>
         <div class="section-label">Тип прошивки — STM_U4</div>
@@ -411,6 +423,7 @@
         <div class="menu-btn-disabled">📄 Листи (Поки порожньо) <span>🔒</span></div>
     </div>
 
+    <!-- ═══════════════════ MONITOR MODEL ═══════════════════ -->
     <div id="screen-monitor" class="hidden">
         <div class="back-btn" onclick="openMenu('screen-plates')">← ДО ПЛАТ ІНДИКАЦІЇ</div>
         <div class="section-label">Ревізія — <span id="monitor-model-name"></span></div>
@@ -422,6 +435,7 @@
         </div>
     </div>
 
+    <!-- ═══════════════════ FLASH ═══════════════════ -->
     <div id="screen-flash" class="hidden">
         <div id="back-to-prev-screen" class="back-btn">← НАЗАД</div>
 
@@ -470,7 +484,7 @@
     </div>
 </div>
 
-<script src="/static/script.js"></script>
+<!-- ═══════════════════ CONFIRM OVERLAY ═══════════════════ -->
 <div id="confirm-overlay" class="hidden" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); z-index:9999; justify-content:center; align-items:center;">
     <div style="background:#111; border:1px solid #444; border-top:3px solid #FFD600; border-radius:6px; padding:32px 28px; max-width:300px; width:90%; text-align:center;">
         <div style="font-family:'Share Tech Mono',monospace; font-size:0.7rem; color:#b8a840; letter-spacing:3px; margin-bottom:12px;">ПІДТВЕРДЖЕННЯ</div>
@@ -481,5 +495,27 @@
         </div>
     </div>
 </div>
+
+<script src="/static/script.js"></script>
+<script>
+async function showIP() {
+    const ov = document.createElement('div');
+    ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:9999;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:12px;';
+    ov.innerHTML = `
+        <div style="font-family:'Share Tech Mono',monospace;font-size:0.7rem;color:#b8a840;letter-spacing:3px;margin-bottom:4px;">МЕРЕЖА / IP</div>
+        <div id="_ip_content" style="font-family:'Share Tech Mono',monospace;font-size:0.9rem;color:#888;text-align:center;line-height:2.2;"></div>
+        <button onclick="this.parentNode.remove()" style="margin-top:12px;padding:14px 40px;background:#FFD600;border:none;color:#000;font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:1.1rem;letter-spacing:3px;border-radius:4px;cursor:pointer;">ЗАКРИТИ</button>`;
+    document.body.appendChild(ov);
+    try {
+        const r = await fetch('/get_ip');
+        const d = await r.json();
+        const ips = d.ip.split(' ').filter(Boolean);
+        document.getElementById('_ip_content').innerHTML =
+            ips.map(ip => `<div style="color:#FFD600;font-size:1.4rem;letter-spacing:2px;">${ip}</div>`).join('');
+    } catch(e) {
+        document.getElementById('_ip_content').innerHTML = '<div style="color:#f44;">Помилка отримання IP</div>';
+    }
+}
+</script>
 </body>
 </html>
