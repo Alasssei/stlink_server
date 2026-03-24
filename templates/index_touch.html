@@ -1,0 +1,845 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=480, height=320, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>STLink PRO</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Barlow+Condensed:wght@400;700;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --y:   #FFD600;
+    --yd:  #c9a800;
+    --yg:  rgba(255,214,0,.13);
+    --ygs: rgba(255,214,0,.32);
+    --b0:  #080808;
+    --b1:  #111;
+    --b2:  #181818;
+    --b3:  #222;
+    --gr:  #666;
+    --tx:  #e8d87a;
+    --txd: #a08830;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body {
+    width: 480px; height: 320px;
+    overflow: hidden;
+    background: var(--b0);
+    color: var(--tx);
+    font-family: 'Barlow Condensed', sans-serif;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+    user-select: none;
+  }
+
+  /* scanline overlay */
+  body::after {
+    content:''; pointer-events:none; position:fixed; inset:0; z-index:9999;
+    background: repeating-linear-gradient(
+      0deg, transparent, transparent 3px, rgba(0,0,0,.08) 3px, rgba(0,0,0,.08) 4px
+    );
+  }
+
+  /* ── SCREENS ── */
+  .screen {
+    position: absolute; inset: 0;
+    display: none; flex-direction: column;
+  }
+  .screen.active { display: flex; }
+
+  /* ── HEADER BAR ── */
+  .hdr {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 10px;
+    height: 52px; min-height: 52px;
+    background: var(--b1);
+    border-bottom: 2px solid var(--y);
+  }
+  .hdr-logo {
+    font-weight: 900; font-size: 1.45rem; letter-spacing: 5px;
+    text-transform: uppercase; color: var(--y);
+    text-shadow: 0 0 16px var(--ygs);
+  }
+  .hdr-logo span {
+    background: var(--y); color: var(--b0);
+    padding: 0 6px; margin-left: 5px; font-size: 1.2rem;
+  }
+  .hdr-sub {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: .6rem; color: var(--txd); letter-spacing: 2px;
+  }
+  .hdr-update {
+    font-size: 2rem; color: var(--gr); cursor: pointer;
+    padding: 8px 14px; line-height: 1;
+  }
+  .hdr-update:active { color: var(--y); }
+
+  /* ── CONTENT AREA ── */
+  .content {
+    flex: 1; display: flex; flex-direction: column;
+    padding: 6px 8px; gap: 5px;
+    overflow: hidden;
+  }
+
+  /* ── SECTION LABEL ── */
+  .slabel {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: .58rem; letter-spacing: 3px; color: var(--txd);
+    text-transform: uppercase; padding-left: 8px;
+    border-left: 2px solid var(--yd);
+    line-height: 1.3;
+  }
+
+  /* ── MENU BUTTON ── */
+  .mbtn {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 0 14px;
+    background: var(--b1);
+    border: 1px solid #2a2a2a; border-left: 4px solid var(--y);
+    border-radius: 3px;
+    cursor: pointer; min-height: 44px; flex: 1;
+    font-size: 1.05rem; font-weight: 700; letter-spacing: 1px;
+    text-transform: uppercase; color: var(--tx);
+    transition: background .08s;
+  }
+  .mbtn:active { background: var(--b2); transform: scale(.98); }
+  .mbtn .arr { color: var(--y); font-size: 1.1rem; }
+  .mbtn-disabled {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 0 14px; min-height: 44px; flex: 1;
+    background: var(--b1); border: 1px solid #1a1a1a; border-left: 4px solid #2a2a2a;
+    border-radius: 3px; font-size: 1.05rem; font-weight: 700;
+    letter-spacing: 1px; text-transform: uppercase;
+    color: var(--gr); opacity: .35; cursor: not-allowed;
+  }
+
+  /* grid of buttons — fills available space evenly */
+  .btn-stack { display: flex; flex-direction: column; gap: 5px; flex: 1; }
+  .btn-row   { display: flex; gap: 5px; flex: 1; }
+
+  /* ── BACK BUTTON ── */
+  .back {
+    display: flex; align-items: center; justify-content: center;
+    height: 36px; min-height: 36px;
+    background: transparent;
+    border: 1px solid #333; border-top: 2px solid var(--y);
+    border-radius: 3px; cursor: pointer;
+    font-weight: 900; font-size: .85rem;
+    text-transform: uppercase; letter-spacing: 3px; color: var(--y);
+    transition: background .08s;
+  }
+  .back:active { background: var(--yg); }
+
+  /* ════════════════════════════════════
+     FLASH SCREEN — two-column layout
+  ═════════════════════════════════════ */
+  #screen-flash .content {
+    flex-direction: row; padding: 5px 8px; gap: 7px;
+  }
+  .flash-left {
+    display: flex; flex-direction: column; gap: 5px;
+    width: 268px; min-width: 268px;
+  }
+  .flash-right {
+    display: flex; flex-direction: column; gap: 5px;
+    flex: 1;
+  }
+
+  /* board title */
+  .board-title {
+    font-weight: 900; font-size: 1.35rem; color: var(--y);
+    text-shadow: 0 0 14px var(--ygs); letter-spacing: 1px;
+    text-transform: uppercase; line-height: 1;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .board-sub {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: .62rem; color: var(--txd); letter-spacing: 2px;
+  }
+
+  /* direction selector */
+  #dir-sel {
+    display: none;
+    align-items: center; justify-content: center; gap: 8px;
+    padding: 4px 0;
+  }
+  #dir-sel.show { display: flex; }
+  .dir-btn {
+    background: var(--b2); border: 2px solid var(--yd); color: var(--y);
+    border-radius: 3px; padding: 5px 14px;
+    font-size: 1.1rem; cursor: pointer;
+  }
+  .dir-btn:active { background: var(--yg); }
+  #dir-label {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 1rem; color: var(--y); min-width: 52px; text-align: center;
+  }
+
+  /* fast mode row */
+  .fast-row {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 5px 8px;
+    background: var(--b2); border: 1px solid var(--b3); border-radius: 3px;
+    min-height: 36px;
+  }
+  .fast-lbl {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: .6rem; letter-spacing: 2px; color: var(--txd);
+    text-transform: uppercase;
+  }
+  /* toggle switch */
+  .toggle { position: relative; display: inline-block; width: 44px; height: 22px; }
+  .toggle input { opacity: 0; width: 0; height: 0; }
+  .toggle-slider {
+    position: absolute; cursor: pointer; inset: 0;
+    background: var(--b3); border-radius: 22px;
+    border: 1px solid #333; transition: .2s;
+  }
+  .toggle-slider::before {
+    content: ''; position: absolute; width: 16px; height: 16px;
+    left: 3px; top: 2px;
+    background: var(--gr); border-radius: 50%; transition: .2s;
+  }
+  .toggle input:checked + .toggle-slider { background: var(--yg); border-color: var(--yd); }
+  .toggle input:checked + .toggle-slider::before {
+    transform: translateX(22px); background: var(--y);
+  }
+
+  /* flash button */
+  .btn-flash {
+    background: var(--y); color: var(--b0);
+    border: none; border-radius: 3px;
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 900; font-size: 1.4rem;
+    letter-spacing: 4px; text-transform: uppercase;
+    cursor: pointer; min-height: 52px;
+    box-shadow: 0 3px 18px var(--ygs);
+    transition: .08s;
+  }
+  .btn-flash:active { transform: scale(.97); box-shadow: none; }
+  .btn-flash:disabled {
+    background: var(--b3); color: var(--gr);
+    box-shadow: none; cursor: not-allowed;
+  }
+
+  /* progress */
+  .prog-wrap { display: flex; flex-direction: column; gap: 2px; }
+  .prog-bar-bg {
+    height: 6px; background: var(--b3); border-radius: 0; overflow: hidden;
+  }
+  .prog-bar { height: 100%; background: var(--y); width: 0%; transition: width .3s; }
+  .prog-txt {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: .58rem; color: var(--txd); letter-spacing: 2px;
+  }
+
+  /* ── RIGHT COLUMN ── */
+  .counter-box {
+    background: var(--b1); border: 1px solid #2a2a2a;
+    border-top: 3px solid var(--y); border-radius: 3px;
+    padding: 6px 10px;
+  }
+  .counter-lbl {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: .55rem; color: var(--txd); letter-spacing: 2px; display: block;
+  }
+  .counter-val {
+    font-weight: 900; font-size: 2.4rem; color: var(--y); line-height: 1.1;
+  }
+  #wait-box {
+    display: none;
+    background: var(--b1); border: 1px solid #2a2a2a;
+    border-top: 3px solid #ff9800; border-radius: 3px;
+    padding: 4px 10px;
+  }
+  #wait-box.show { display: block; }
+  #wait-box .counter-lbl { color: #a06000; }
+  #wait-box .counter-val { color: #ff9800; font-size: 1.6rem; }
+
+  /* terminal */
+  .terminal-hdr {
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .term-lbl {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: .55rem; color: var(--txd); letter-spacing: 2px;
+  }
+  .dbg-btn {
+    background: transparent; border: 1px solid #333; color: #555;
+    font-family: 'Share Tech Mono', monospace; font-size: .52rem;
+    letter-spacing: 1px; padding: 2px 7px; border-radius: 2px; cursor: pointer;
+  }
+  .dbg-btn:active { opacity: .7; }
+  .terminal {
+    flex: 1; background: #000; color: #aaaa00;
+    padding: 6px 8px; border-radius: 2px;
+    font-family: 'Share Tech Mono', monospace; font-size: .65rem;
+    overflow-y: auto; overflow-x: hidden;
+    border: 1px solid #1a1a1a; border-left: 2px solid var(--yd);
+    white-space: pre-wrap; line-height: 1.4;
+    min-height: 0;
+  }
+  .terminal::-webkit-scrollbar { width: 3px; }
+  .terminal::-webkit-scrollbar-thumb { background: var(--yd); }
+
+  /* ── CONFIRM OVERLAY ── */
+  #confirm-overlay {
+    display: none; position: fixed; inset: 0; z-index: 9998;
+    background: rgba(0,0,0,.88);
+    justify-content: center; align-items: center;
+  }
+  #confirm-overlay.show { display: flex; }
+  .confirm-box {
+    background: var(--b1); border: 1px solid #444;
+    border-top: 3px solid var(--y); border-radius: 5px;
+    padding: 22px 22px 18px; width: 260px; text-align: center;
+  }
+  .confirm-ttl {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: .6rem; color: var(--txd); letter-spacing: 3px; margin-bottom: 8px;
+  }
+  .confirm-q {
+    font-weight: 700; font-size: 1.1rem; color: var(--y); margin-bottom: 18px;
+  }
+  .confirm-btns { display: flex; gap: 10px; }
+  .confirm-btns button {
+    flex: 1; padding: 11px 0; font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 700; font-size: 1rem; letter-spacing: 2px;
+    border-radius: 3px; cursor: pointer;
+  }
+  .confirm-btns .btn-no {
+    background: transparent; border: 1px solid #444; color: var(--gr);
+  }
+  .confirm-btns .btn-yes {
+    background: var(--y); border: none; color: var(--b0);
+    font-weight: 900;
+  }
+
+  /* ── PBL-RSHK grid (2 col) ── */
+  #pbl-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 5px; flex: 1;
+    overflow-y: auto;
+  }
+  #pbl-grid .mbtn { min-height: 40px; font-size: .9rem; flex: unset; }
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════ MAIN ═══════════════════ -->
+<div id="screen-main" class="screen active">
+  <div class="hdr">
+    <div class="hdr-logo">STLink <span>PRO</span></div>
+    <div class="hdr-sub">▸ FLASH TOOL ◂</div>
+  </div>
+  <div class="content">
+    <div class="btn-stack">
+      <div class="mbtn" onclick="go('screen-monitor-root')">📺 Плати Монітора <span class="arr">→</span></div>
+      <div class="mbtn" onclick="go('screen-plates')">📂 Плати Індикації <span class="arr">→</span></div>
+      <div class="mbtn" onclick="go('screen-other')">🛠️ Інше <span class="arr">→</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════ OTHER (stub) ═══════════════════ -->
+<div id="screen-other" class="screen">
+  <div class="hdr">
+    <div class="hdr-logo">STLink <span>PRO</span></div>
+    <div class="hdr-sub">▸ ІНШЕ ◂</div>
+  </div>
+  <div class="content">
+    <div class="back" onclick="go('screen-main')">← НА ГОЛОВНУ</div>
+    <div class="btn-stack">
+      <div class="mbtn" onclick="runUpdate()">⟳ ОНОВЛЕННЯ З GITHUB <span class="arr">→</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════ MONITOR ROOT ═══════════════════ -->
+<div id="screen-monitor-root" class="screen">
+  <div class="hdr">
+    <div class="hdr-logo">STLink <span>PRO</span></div>
+    <div class="hdr-sub">▸ МОНІТОР ◂</div>
+  </div>
+  <div class="content">
+    <div class="back" onclick="go('screen-main')">← НА ГОЛОВНУ</div>
+    <div class="btn-stack">
+      <div class="mbtn" onclick="go('screen-new-monitor')">📟 Новий монітор <span class="arr">→</span></div>
+      <div class="mbtn" onclick="go('screen-old-raspi')">🍓 Старий (Raspberry) <span class="arr">→</span></div>
+      <div class="mbtn" onclick="go('screen-old-ctrl')">🎮 Старий (Контроллер) <span class="arr">→</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════ NEW MONITOR ═══════════════════ -->
+<div id="screen-new-monitor" class="screen">
+  <div class="hdr">
+    <div class="hdr-logo">STLink <span>PRO</span></div>
+    <div class="hdr-sub">▸ НОВИЙ МОНІТОР ◂</div>
+  </div>
+  <div class="content">
+    <div class="back" onclick="go('screen-monitor-root')">← ДО ТИПІВ МОНІТОРІВ</div>
+    <div class="slabel">VGA</div>
+    <div class="btn-row">
+      <div class="mbtn" onclick="sel('VGA 3USB','monitors/new/PTL_VGA_2(3USB)','screen-new-monitor')">3USB <span class="arr">→</span></div>
+      <div class="mbtn" onclick="sel('VGA 4USB','monitors/new/PTL_VGA_v3(4USB)','screen-new-monitor')">4USB <span class="arr">→</span></div>
+    </div>
+    <div class="slabel">USB 407 V2</div>
+    <div class="btn-row">
+      <div class="mbtn" onclick="sel('USB_407_V2 (3USB)','monitors/new/USB_407_V2','screen-new-monitor')">3USB <span class="arr">→</span></div>
+    </div>
+    <div class="slabel">USB 407 V3</div>
+    <div class="btn-row">
+      <div class="mbtn" onclick="sel('USB_407_V3 (4USB)','monitors/new/PTL_MAINC_USB407_5500_v4(4USB)','screen-new-monitor')">4USB <span class="arr">→</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════ OLD RASPI ═══════════════════ -->
+<div id="screen-old-raspi" class="screen">
+  <div class="hdr">
+    <div class="hdr-logo">STLink <span>PRO</span></div>
+    <div class="hdr-sub">▸ RASPI ◂</div>
+  </div>
+  <div class="content">
+    <div class="back" onclick="go('screen-monitor-root')">← ДО ТИПІВ МОНІТОРІВ</div>
+    <div class="slabel">ПРОЦ 722</div>
+    <div class="btn-row">
+      <div class="mbtn" onclick="sel('R1 722 (Raspi)','monitors/raspi/R1__722','screen-old-raspi')">R1_722 <span class="arr">→</span></div>
+      <div class="mbtn" onclick="sel('234 722 (Raspi)','monitors/common/234__722','screen-old-raspi')">234_722 <span class="arr">→</span></div>
+    </div>
+    <div class="slabel">ПРОЦ 105</div>
+    <div class="btn-row">
+      <div class="mbtn" onclick="sel('R1 105 (Raspi)','monitors/raspi/R1__105','screen-old-raspi')">R1_105 <span class="arr">→</span></div>
+      <div class="mbtn" onclick="sel('234 105 (Raspi)','monitors/common/234__105','screen-old-raspi')">234_105 <span class="arr">→</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════ OLD CTRL ═══════════════════ -->
+<div id="screen-old-ctrl" class="screen">
+  <div class="hdr">
+    <div class="hdr-logo">STLink <span>PRO</span></div>
+    <div class="hdr-sub">▸ CTRL ◂</div>
+  </div>
+  <div class="content">
+    <div class="back" onclick="go('screen-monitor-root')">← ДО ТИПІВ МОНІТОРІВ</div>
+    <div class="slabel">ПРОЦ 722</div>
+    <div class="btn-row">
+      <div class="mbtn" onclick="sel('K1 722 (Ctrl)','monitors/ctrl/K1__722','screen-old-ctrl')">K1_722 <span class="arr">→</span></div>
+      <div class="mbtn" onclick="sel('234 722 (Ctrl)','monitors/common/234__722','screen-old-ctrl')">234_722 <span class="arr">→</span></div>
+    </div>
+    <div class="slabel">ПРОЦ 105</div>
+    <div class="btn-row">
+      <div class="mbtn" onclick="sel('K1 105 (Ctrl)','monitors/ctrl/K1__105','screen-old-ctrl')">K1_105 <span class="arr">→</span></div>
+      <div class="mbtn" onclick="sel('234 105 (Ctrl)','monitors/common/234__105','screen-old-ctrl')">234_105 <span class="arr">→</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════ PLATES ═══════════════════ -->
+<div id="screen-plates" class="screen">
+  <div class="hdr">
+    <div class="hdr-logo">STLink <span>PRO</span></div>
+    <div class="hdr-sub">▸ ІНДИКАЦІЯ ◂</div>
+  </div>
+  <div class="content">
+    <div class="back" onclick="go('screen-main')">← НА ГОЛОВНУ</div>
+    <div class="btn-stack">
+      <div class="btn-row">
+        <div class="mbtn" onclick="openModel('SR-01')">📟 SR-01 <span class="arr">→</span></div>
+        <div class="mbtn" onclick="openModel('SR-04_06')">📟 SR-04/06 <span class="arr">→</span></div>
+      </div>
+      <div class="btn-row">
+        <div class="mbtn" onclick="go('screen-stm-u4')">📟 STM_U4 (16-кан.) <span class="arr">→</span></div>
+        <div class="mbtn" onclick="sel('PBL_PTL','indicators/PTL_LED2812_36CELL_F030','screen-plates')">📟 PBL_PTL (36) <span class="arr">→</span></div>
+      </div>
+      <div class="btn-row">
+        <div class="mbtn" onclick="openPblRshk()">📟 PBL_RSHK (Напрямки) <span class="arr">→</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════ STM_U4 ═══════════════════ -->
+<div id="screen-stm-u4" class="screen">
+  <div class="hdr">
+    <div class="hdr-logo">STLink <span>PRO</span></div>
+    <div class="hdr-sub">▸ STM_U4 ◂</div>
+  </div>
+  <div class="content">
+    <div class="back" onclick="go('screen-plates')">← НАЗАД</div>
+    <div class="slabel">Тип прошивки — STM_U4</div>
+    <div class="btn-stack">
+      <div class="mbtn" onclick="sel('STM_U4 RSHK','indicators/PTL_16CH_RSHK','screen-stm-u4')">🛠️ RSHK (PTL_16CH) <span class="arr">→</span></div>
+      <div class="mbtn-disabled">📄 Листи (Поки порожньо) 🔒</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════ MONITOR MODEL ═══════════════════ -->
+<div id="screen-monitor" class="screen">
+  <div class="hdr">
+    <div class="hdr-logo">STLink <span>PRO</span></div>
+    <div class="hdr-sub" id="monitor-hdr-sub">▸ SR ◂</div>
+  </div>
+  <div class="content">
+    <div class="back" onclick="go('screen-plates')">← ДО ПЛАТ ІНДИКАЦІЇ</div>
+    <div class="slabel">Ревізія — <span id="monitor-model-name"></span></div>
+    <div class="btn-stack">
+      <div class="mbtn" id="btn-old-mon">📺 Старий монітор <span class="arr">→</span></div>
+      <div class="mbtn" id="btn-new-mon">📺 Новий монітор <span class="arr">→</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════ PBL RSHK ═══════════════════ -->
+<div id="screen-pbl-rshk" class="screen">
+  <div class="hdr">
+    <div class="hdr-logo">STLink <span>PRO</span></div>
+    <div class="hdr-sub">▸ PBL RSHK ◂</div>
+  </div>
+  <div class="content">
+    <div class="back" onclick="go('screen-plates')">← НАЗАД</div>
+    <div id="pbl-grid"></div>
+  </div>
+</div>
+
+<!-- ═══════════════════ FLASH ═══════════════════ -->
+<div id="screen-flash" class="screen">
+  <div class="hdr">
+    <div class="hdr-logo">STLink <span>PRO</span></div>
+    <div class="hdr-sub" id="flash-hdr-sub">▸ ПРОШИВКА ◂</div>
+  </div>
+  <div class="content">
+
+    <!-- LEFT -->
+    <div class="flash-left">
+      <div class="back" id="flash-back-btn">← НАЗАД</div>
+
+      <div>
+        <div class="board-title" id="display-name">---</div>
+        <div class="board-sub" id="display-sub">READY</div>
+      </div>
+
+      <div id="dir-sel">
+        <button class="dir-btn" onclick="stepDir(-1)">←</button>
+        <div id="dir-label">1-5</div>
+        <button class="dir-btn" onclick="stepDir(1)">→</button>
+      </div>
+
+      <div class="fast-row">
+        <span class="fast-lbl">FAST MODE (AUTO)</span>
+        <label class="toggle">
+          <input type="checkbox" id="fastMode">
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+
+      <button id="flash-btn" class="btn-flash" onclick="triggerFlash()">▶ ПРОШИТИ</button>
+
+      <div class="prog-wrap">
+        <div class="prog-bar-bg"><div id="bar" class="prog-bar"></div></div>
+        <span class="prog-txt" id="percent-text">ОЧІКУВАННЯ</span>
+      </div>
+    </div>
+
+    <!-- RIGHT -->
+    <div class="flash-right">
+      <div class="counter-box">
+        <span class="counter-lbl">ПРОШИТО</span>
+        <div class="counter-val" id="session-count">0</div>
+      </div>
+
+      <div id="wait-box">
+        <span class="counter-lbl">READY IN</span>
+        <div class="counter-val" id="timer-seconds">3s</div>
+      </div>
+
+      <div class="terminal-hdr">
+        <span class="term-lbl">▸ SYS LOG</span>
+        <button class="dbg-btn" id="dbg-btn" onclick="toggleDebug()">DBG:OFF</button>
+      </div>
+      <div id="log" class="terminal">[SYS]: Готово...</div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ═══════════════════ CONFIRM OVERLAY ═══════════════════ -->
+<div id="confirm-overlay">
+  <div class="confirm-box">
+    <div class="confirm-ttl">ПІДТВЕРДЖЕННЯ</div>
+    <div class="confirm-q">Оновити з GitHub?</div>
+    <div class="confirm-btns">
+      <button class="btn-no" onclick="confirmUpdate(false)">СКАСУВАТИ</button>
+      <button class="btn-yes" onclick="confirmUpdate(true)">▶ ТАК</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ─────────────────────── STATE ───────────────────────
+let selectedFile   = '';
+let prevScreen     = 'screen-main';
+let fastInterval   = null;
+let boardCount     = 0;
+let rshkIndex      = 0;
+let debugOn        = false;
+const rshkFiles    = [];
+
+(function buildRshk() {
+  for (let i = 1; i <= 20; i++) {
+    for (let sub = 1; sub <= 2; sub++) {
+      const start = (i - 1) * 10 + (sub === 1 ? 1 : 6);
+      rshkFiles.push({
+        path: `rshk/PTL_LED2812_KIOTO_F030_${i}_${sub}`,
+        label: `${start}-${start + 4}`
+      });
+    }
+  }
+})();
+
+// ─────────────────────── NAVIGATION ───────────────────────
+function go(id) {
+  stopFast();
+  if (id !== 'screen-flash') {
+    boardCount = 0;
+    document.getElementById('session-count').innerText = '0';
+    document.getElementById('log').innerHTML = '[SYS]: Готово до роботи...';
+    document.getElementById('dir-sel').classList.remove('show');
+  }
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  const t = document.getElementById(id);
+  if (t) t.classList.add('active');
+  if (id !== 'screen-flash') prevScreen = id;
+}
+
+// ─────────────────────── FIRMWARE SELECT ───────────────────────
+function sel(displayName, filePath, originId) {
+  selectedFile = filePath;
+  prevScreen   = originId;
+
+  document.getElementById('display-name').innerText  = displayName;
+  document.getElementById('display-sub').innerText   = 'Готовий до запису';
+  document.getElementById('flash-back-btn').onclick  = () => go(originId);
+  document.getElementById('bar').style.width         = '0%';
+  document.getElementById('percent-text').innerText  = 'Очікування';
+  document.getElementById('flash-btn').disabled      = false;
+  document.getElementById('fastMode').checked        = false;
+
+  const log = document.getElementById('log');
+  log.innerHTML = `<span style="color:#0f0">[SYS]: Файл: ${filePath}</span>\n`;
+  stopFast();
+  go('screen-flash');
+}
+
+// ─────────────────────── MODEL (SR-01 etc.) ───────────────────────
+let selModel = '';
+function openModel(model) {
+  selModel = model;
+  document.getElementById('monitor-model-name').innerText = model.replace('_','/');
+  document.getElementById('monitor-hdr-sub').innerText    = `▸ ${model.replace('_','/')} ◂`;
+  document.getElementById('btn-old-mon').onclick = () =>
+    sel(model.replace('_','/') + ' (Старий)', 'indicators/' + model + '_old', 'screen-monitor');
+  document.getElementById('btn-new-mon').onclick = () =>
+    sel(model.replace('_','/') + ' (Новий)', 'indicators/' + model + '_new', 'screen-monitor');
+  go('screen-monitor');
+}
+
+// ─────────────────────── PBL RSHK ───────────────────────
+function openPblRshk() {
+  // build grid buttons
+  const grid = document.getElementById('pbl-grid');
+  grid.innerHTML = '';
+  rshkFiles.forEach((f, idx) => {
+    const b = document.createElement('div');
+    b.className = 'mbtn';
+    b.innerHTML = `${f.label} <span class="arr">→</span>`;
+    b.onclick = () => {
+      rshkIndex = idx;
+      selRshk(idx);
+      document.getElementById('dir-sel').classList.add('show');
+      document.getElementById('dir-label').innerText = rshkFiles[idx].label;
+    };
+    grid.appendChild(b);
+  });
+  go('screen-pbl-rshk');
+}
+
+function selRshk(idx) {
+  const f = rshkFiles[idx];
+  sel(`PBL_RSHK (${f.label})`, f.path, 'screen-pbl-rshk');
+  document.getElementById('dir-sel').classList.add('show');
+  document.getElementById('dir-label').innerText = f.label;
+}
+
+function stepDir(step) {
+  stopFast();
+  document.getElementById('fastMode').checked = false;
+  rshkIndex = (rshkIndex + step + rshkFiles.length) % rshkFiles.length;
+  const f = rshkFiles[rshkIndex];
+  document.getElementById('dir-label').innerText = f.label;
+  selectedFile = f.path;
+  document.getElementById('display-name').innerText = `PBL_RSHK (${f.label})`;
+  const log = document.getElementById('log');
+  log.innerHTML  = `<span style="color:#00adb5">[SYS]: Напрямки ${f.label}</span>\n`;
+  log.innerHTML += `<span style="color:#0f0">[SYS]: Файл: ${f.path}</span>\n`;
+  log.scrollTop  = log.scrollHeight;
+}
+
+// ─────────────────────── FAST MODE ───────────────────────
+document.getElementById('fastMode').addEventListener('change', function() {
+  this.checked ? startFast() : stopFast();
+});
+
+function startFast() {
+  if (fastInterval) clearInterval(fastInterval);
+  fastInterval = setInterval(async () => {
+    try {
+      const r = await fetch('/check_connection');
+      const d = await r.json();
+      if (d.status === 'connected') { clearInterval(fastInterval); triggerFlash(); }
+    } catch(e) {}
+  }, 2000);
+}
+
+function stopFast() {
+  if (fastInterval) { clearInterval(fastInterval); fastInterval = null; }
+  document.getElementById('wait-box').classList.remove('show');
+}
+
+// ─────────────────────── DEBUG ───────────────────────
+function toggleDebug() {
+  debugOn = !debugOn;
+  const btn = document.getElementById('dbg-btn');
+  btn.innerText = debugOn ? 'DBG:ON' : 'DBG:OFF';
+  btn.style.borderColor = debugOn ? '#ff9800' : '#333';
+  btn.style.color       = debugOn ? '#ff9800' : '#555';
+  document.querySelectorAll('.dbg-entry').forEach(el =>
+    el.style.display = debugOn ? 'block' : 'none'
+  );
+}
+
+function addDebug(log, text) {
+  const s = document.createElement('span');
+  s.className = 'dbg-entry';
+  s.style.cssText = `color:#ff9800;font-size:.6rem;display:${debugOn?'block':'none'}`;
+  s.textContent = text;
+  log.appendChild(s);
+  log.appendChild(document.createTextNode('\n'));
+}
+
+// ─────────────────────── FLASH ───────────────────────
+function playOK() {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const osc = ctx.createOscillator();
+    const g   = ctx.createGain();
+    osc.type = 'sine'; osc.frequency.value = 820;
+    g.gain.setValueAtTime(.08, ctx.currentTime);
+    g.gain.exponentialRampToValueAtTime(.001, ctx.currentTime + .18);
+    osc.connect(g); g.connect(ctx.destination);
+    osc.start(); osc.stop(ctx.currentTime + .18);
+  } catch(e) {}
+}
+
+async function triggerFlash() {
+  const btn  = document.getElementById('flash-btn');
+  const log  = document.getElementById('log');
+  const bar  = document.getElementById('bar');
+  const pct  = document.getElementById('percent-text');
+  const fast = document.getElementById('fastMode').checked;
+
+  btn.disabled = true;
+  bar.style.width = '30%';
+  pct.innerText   = 'Запис...';
+
+  try {
+    const res  = await fetch(`/start_flash?file=${encodeURIComponent(selectedFile)}`);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+
+    if (data.status === 'success') {
+      boardCount++;
+      document.getElementById('session-count').innerText = boardCount;
+      bar.style.width = '100%';
+      pct.innerText   = 'Успішно!';
+      log.innerHTML  += `<span style="color:#0f0">[OK]: Плата №${boardCount} готова</span>\n`;
+      playOK();
+      if (data.output) addDebug(log, data.output);
+      if (fast) runCooldown(3);
+    } else {
+      bar.style.width = '0%';
+      pct.innerText   = 'Помилка!';
+      log.innerHTML  += `<span style="color:#f44">[ERR]: ${data.message || 'Невідома помилка'}</span>\n`;
+      if (data.output || data.full_log) addDebug(log, data.full_log || data.output);
+      if (fast) { log.innerHTML += `<span style="color:#fa0">[FAST]: Пошук...\n</span>`; setTimeout(startFast, 2000); }
+    }
+  } catch(err) {
+    bar.style.width = '0%';
+    pct.innerText   = 'Збій!';
+    log.innerHTML  += `<span style="color:#f44">[SYS]: ${err.message}</span>\n`;
+    if (fast) setTimeout(startFast, 3000);
+  } finally {
+    btn.disabled  = false;
+    log.scrollTop = log.scrollHeight;
+  }
+}
+
+function runCooldown(s) {
+  const box  = document.getElementById('wait-box');
+  const txt  = document.getElementById('timer-seconds');
+  let t = s;
+  box.classList.add('show');
+  txt.innerText = t + 's';
+  const cd = setInterval(() => {
+    t--;
+    txt.innerText = t + 's';
+    if (t <= 0) {
+      clearInterval(cd);
+      box.classList.remove('show');
+      if (document.getElementById('fastMode').checked) startFast();
+    }
+  }, 1000);
+}
+
+// ─────────────────────── UPDATE ───────────────────────
+function runUpdate() {
+  document.getElementById('confirm-overlay').classList.add('show');
+}
+function confirmUpdate(ok) {
+  document.getElementById('confirm-overlay').classList.remove('show');
+  if (ok) doUpdate();
+}
+async function doUpdate() {
+  const ov = document.createElement('div');
+  ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:9999;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:12px;';
+  ov.innerHTML = `
+    <div id="_utitle" style="font-family:'Share Tech Mono',monospace;font-size:1.1rem;color:#FFD600;letter-spacing:3px;">⟳ ОНОВЛЕННЯ...</div>
+    <div id="_ulog"   style="font-family:'Share Tech Mono',monospace;font-size:.62rem;color:#888;max-width:320px;text-align:center;line-height:1.6;"></div>`;
+  document.body.appendChild(ov);
+  const ttl = ov.querySelector('#_utitle');
+  const lg  = ov.querySelector('#_ulog');
+  try {
+    lg.innerText = 'Підключення до GitHub...';
+    const r = await fetch('/update');
+    const d = await r.json();
+    if (d.status === 'success') {
+      ttl.style.color = '#00ff88'; ttl.innerText = '✓ ГОТОВО';
+      lg.style.color  = '#00ff88'; lg.innerText  = d.output || 'Оновлено';
+      setTimeout(() => { document.body.removeChild(ov); location.reload(); }, 2500);
+    } else {
+      ttl.style.color = '#f44'; ttl.innerText = '✗ ПОМИЛКА';
+      lg.style.color  = '#f44'; lg.innerText  = d.output || 'Щось пішло не так';
+      setTimeout(() => document.body.removeChild(ov), 4000);
+    }
+  } catch(e) {
+    ttl.style.color = '#f44'; ttl.innerText = '✗ ЗБІЙ';
+    lg.style.color  = '#f44'; lg.innerText  = e.message;
+    setTimeout(() => document.body.removeChild(ov), 4000);
+  }
+}
+</script>
+</body>
+</html>

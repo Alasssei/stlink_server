@@ -8,6 +8,11 @@ app = Flask(__name__)
 BASE_DIR = "/home/aboba/stlink_server"
 FIRMWARE_DIR = os.path.join(BASE_DIR, "firmwares")
 
+@app.route('/touch')
+def touch():
+    return render_template('index_touch.html')
+
+
 @app.route('/')
 def index():
     return render_template('index.html')

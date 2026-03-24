@@ -76,6 +76,88 @@ echo "[6/7] Налаштування sudoers..."
 echo "aboba ALL=(ALL) NOPASSWD: ALL" | sudo tee /etc/sudoers.d/aboba > /dev/null
 sudo chmod 440 /etc/sudoers.d/aboba
 
+# ── ДИСПЛЕЙ ──
+echo "[+] Налаштування дисплея Hosyond 3.5..."
+
+# Пакети
+sudo apt-get install -y -q \
+    xserver-xorg x11-xserver-utils xinit \
+    chromium unclutter fonts-noto-color-emoji xinput
+
+# Xwrapper
+echo 'allowed_users=anybody
+needs_root_rights=yes' | sudo tee /etc/X11/Xwrapper.config
+
+# Калібровка тачу
+sudo mkdir -p /etc/X11/xorg.conf.d
+sudo tee /etc/X11/xorg.conf.d/99-calibration.conf > /dev/null <<EOF2
+Section "InputClass"
+        Identifier      "calibration"
+        MatchDriver     "libinput"
+        MatchIsTouchscreen "on"
+        Option  "CalibrationMatrix"  "-1 0 1 0 1 0 0 0 1"
+EndSection
+EOF2
+
+# Xorg fbdev
+sudo tee /etc/X11/xorg.conf.d/99-fbdev.conf > /dev/null <<EOF2
+Section "Device"
+    Identifier "myfb"
+    Driver "fbdev"
+    Option "fbdev" "/dev/fb1"
+EndSection
+Section "Screen"
+    Identifier "myscreen"
+    Device "myfb"
+    DefaultDepth 16
+    SubSection "Display"
+        Depth 16
+        Modes "480x320"
+    EndSubSection
+EndSection
+EOF2
+
+# config.txt
+sudo sed -i 's/dtoverlay=vc4-kms-v3d/#dtoverlay=vc4-kms-v3d/' /boot/firmware/config.txt
+grep -q 'dtoverlay=piscreen' /boot/firmware/config.txt || echo 'dtparam=spi=on
+dtoverlay=piscreen,speed=32000000,rotate=90' | sudo tee -a /boot/firmware/config.txt
+
+# Kiosk сервіси
+sudo tee /etc/systemd/system/kiosk.service > /dev/null <<EOF2
+[Unit]
+Description=Kiosk Display
+After=stlink.service
+Requires=stlink.service
+[Service]
+User=$USER
+Environment=FRAMEBUFFER=/dev/fb1
+ExecStartPre=/bin/sleep 5
+ExecStart=/bin/bash -c "FRAMEBUFFER=/dev/fb1 startx -- -nocursor"
+Restart=always
+RestartSec=5
+[Install]
+WantedBy=multi-user.target
+EOF2
+
+sudo tee /etc/systemd/system/chromium.service > /dev/null <<EOF2
+[Unit]
+Description=Chromium Kiosk
+After=kiosk.service
+Requires=kiosk.service
+[Service]
+User=$USER
+Environment=DISPLAY=:0
+ExecStartPre=/bin/sleep 8
+ExecStart=chromium --kiosk --no-sandbox --disable-gpu --window-size=480,320 --window-position=0,0 --disable-session-crashed-bubble --disable-restore-session-state --no-first-run --disable-infobars --disable-features=TranslateUI http://localhost:5000/touch
+Restart=always
+RestartSec=5
+[Install]
+WantedBy=multi-user.target
+EOF2
+
+sudo systemctl enable kiosk.service chromium.service
+
+
 # ── 7. SYSTEMD СЕРВІС ──
 echo "[7/7] Створення systemd сервісу..."
 sudo tee /etc/systemd/system/stlink.service > /dev/null <<EOF
